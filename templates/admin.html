@@ -264,14 +264,15 @@
 
     <!-- JavaScript for Auto-Refresh -->
     <script>
+        // Function to fetch and update auction data
         function fetchAuctionData() {
-            fetch('/get_auction_data')  // Endpoint to fetch updated auction data
+            fetch('/get_consolidated_data')
                 .then(response => response.json())
                 .then(data => {
                     // Update Auction Status
                     document.getElementById('auction-status').textContent = data.status;
                     document.getElementById('current-round').textContent = data.current_round;
-        
+    
                     // Update Round Results Table
                     const roundResultsTable = document.getElementById('round-results-table').getElementsByTagName('tbody')[0];
                     roundResultsTable.innerHTML = '';
@@ -283,7 +284,7 @@
                         row.insertCell().textContent = result.amount;
                         row.insertCell().textContent = data.current_leaders[result.block];
                     });
-        
+    
                     // Update Bid History Table
                     const bidHistoryTable = document.getElementById('bid-history-table').getElementsByTagName('tbody')[0];
                     bidHistoryTable.innerHTML = '';
@@ -295,7 +296,7 @@
                         row.insertCell().textContent = bid.amount;
                         row.insertCell().textContent = bid.is_success;
                     });
-        
+    
                     // Update Auction Table
                     const auctionTable = document.getElementById('auction-table').getElementsByTagName('tbody')[0];
                     auctionTable.innerHTML = '';
@@ -305,7 +306,7 @@
                         row.insertCell().textContent = data.block_data[block].start_price;
                         row.insertCell().textContent = data.current_leaders[block];
                     }
-        
+    
                     // Update User Bids Left Table
                     const userBidsLeftTable = document.getElementById('user-bids-left-table').getElementsByTagName('tbody')[0];
                     userBidsLeftTable.innerHTML = '';
@@ -314,7 +315,7 @@
                         row.insertCell().textContent = user;
                         row.insertCell().textContent = data.user_bids_left[user]; // Bids left for each user
                     }
-        
+    
                     // Display Total Bids Left
                     const totalBidsLeftElement = document.getElementById('total-bids-left');
                     if (totalBidsLeftElement) {
@@ -323,14 +324,14 @@
                 })
                 .catch(error => console.error('Error fetching auction data:', error));
         }
-
+    
         // Refresh data every second
         function startAutoRefresh() {
             setInterval(() => {
                 fetchAuctionData();  // Fetch and update data every second
             }, 1000); // Refresh every second
         }
-
+    
         // Start auto-refresh when the page loads
         startAutoRefresh();
     </script>

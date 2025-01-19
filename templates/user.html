@@ -8,33 +8,35 @@
     <style>
         :root {
             --play-purple: #7B21BA;
-            --play-purple-hover: #6618A1;
-            --play-light-purple: #F5F0FF;
             --play-border-radius: 16px;
             --panel-bg: #FAFAFA;
             --mini-panel-bg: #F8F9FD;
             --text-dark: #1A1A1A;
             --table-header-bg: #F0F2F5;
         }
-
+        
         body {
             background-color: #F8F9FA;
             font-family: 'Open Sans', sans-serif;
             padding: 2rem;
             color: var(--text-dark);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
-
+        
         .container {
             max-width: 2200px;
             margin: 0 auto;
+            flex: 1;
         }
-
+        
         h1, h2, h3, .welcome-title {
             font-family: 'Playfair Display', serif;
             color: var(--text-dark);
             font-weight: 700;
         }
-
+        
         .welcome-panel {
             background-color: var(--mini-panel-bg);
             padding: 32px;
@@ -45,49 +47,49 @@
             position: relative;
             transition: background-color 0.3s ease;
         }
-
+        
         .welcome-title {
             font-size: 32px;
             font-weight: 900;
             margin-bottom: 16px;
         }
-
+        
         .welcome-description {
             font-size: 18px;
             color: #666;
             margin-top: 16px;
             line-height: 1.6;
         }
-
+        
         .three-column-layout {
             display: flex;
             gap: 32px;
         }
-
+        
         .left-column, .middle-column, .right-column {
             background-color: white;
             padding: 24px;
             border-radius: var(--play-border-radius);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 12px rgba(72, 33, 156, 0.53);
         }
-
+        
         .left-column {
             width: 300px;
         }
-
+        
         .middle-column {
             flex: 1;
         }
-
+        
         .right-column {
-            width: 600px;
+            width: 500px;
         }
-
+        
         .table {
             border-radius: var(--play-border-radius);
             overflow: hidden;
         }
-
+        
         .table th {
             background-color: var(--table-header-bg);
             color: var(--text-dark);
@@ -95,46 +97,18 @@
             padding: 16px;
             border: none;
         }
-
+        
         .table td {
             padding: 16px;
-            border-color: #E5E5E5;
+            border-color:rgba(17, 238, 168, 0);
         }
-
-        .btn-primary {
-            background-color: var(--play-purple);
-            border-color: var(--play-purple);
-        }
-
-        .btn-primary:hover {
-            background-color: var(--play-purple-hover);
-            border-color: var(--play-purple-hover);
-        }
-
-        .btn-danger {
-            background-color: #dc3545;
-            border-color: #dc3545;
-        }
-
-        .btn-danger:hover {
-            background-color: #c82333;
-            border-color: #c82333;
-        }
-
-        .alert-info {
-            background-color: #e9ecef;
-            border-color: #dee2e6;
-            color: #495057;
-            border-radius: var(--play-border-radius);
-            padding: 16px;
-        }
-
+        
         .fixed-panel {
             display: flex;
             flex-direction: column;
             gap: 1rem;
         }
-
+        
         .fixed-panel-item {
             background-color: var(--mini-panel-bg);
             padding: 1rem;
@@ -142,23 +116,45 @@
             border: 1px solid #dee2e6;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
-
+        
         .logout-button {
             position: absolute;
             top: 20px;
             right: 20px;
         }
+        
         /* Custom light colors for table rows */
+        /* Highlight blocks the user has won when the auction is finished (green) */
+        .table-success {
+            background-color: #d4edda !important; /* Light green */
+        }
+
+        /* Highlight user's winning blocks during the auction (purple) */
         .table-active {
-            background-color: #f5f0ff; /* Light purple */
+            background-color: #e6ccff !important; /* Light purple */
         }
 
+        /* Highlight blocks the user has bid on but is not leading (light yellow) */
         .table-warning {
-            background-color:rgb(250, 3, 3); /* Light yellow */
+            background-color: #fff3cd !important; /* Light yellow */
         }
 
+        /* Highlight blocks available for bidding (light blue) */
+        .table-info {
+            background-color:rgb(185, 209, 85) !important; /* Light blue */
+        }
+
+        /* Highlight blocks the user cannot bid on (light red) */
         .table-danger {
-            background-color: #fff3cd; /* Light yellow */
+            background-color:rgb(61, 48, 132) !important; /* Light red */
+        }
+                
+        footer {
+            background-color: var(--mini-panel-bg);
+            padding: 1rem;
+            text-align: center;
+            margin-top: auto;
+            border-top: 1px solid #dee2e6;
         }
     </style>
 </head>
@@ -188,10 +184,15 @@
                             <p>{{ auction_data['status'] }}</p>
                         </div>
 
-                        <!-- Current Round -->
+                        <!-- Current Round or Break -->
                         <div class="fixed-panel-item">
-                            <h4>Round:
-                            {{ auction_data['current_round'] }}</h4>
+                            <h4>
+                                {% if auction_data['status'] == 'finished' %}
+                                    Round: {{ auction_data['current_round'] }}
+                                {% else %}
+                                    Break
+                                {% endif %}
+                            </h4>
                         </div>
 
                         <!-- Time Left in Round -->
@@ -208,136 +209,66 @@
                             </p>
                         </div>
                     </div>
-
-
                 </div>
             </div>
 
-            <!-- Middle Column: Auction Table -->
-            <div class="middle-column">
-                <div class="section">
-                    <h2>Auction Table</h2>
-                    <table class="table table-bordered table-hover">
-                        <thead>
-                            <tr>
-                                <th>Block</th>
-                                <th>Bids in Last Round</th>
-                                <th class="start-price-column">Start Price [PLN]</th>
-                                <th>Bid Percentage [%]</th>
-                                <th>Bid Increment [PLN]</th>
-                                <th class="bid-amount-column">Bid Amount [PLN]</th>
-                                <th>Bid</th>
-                                <th>Are You Bidding?</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for block, data in auction_data['block_data'].items() %}
-                                {% set is_winning = auction_data['current_leaders'][block] == user %}
-                                {% set has_bid_on_block = block in auction_data['bid_block_list'][user] %}
-                                {% set can_bid = auction_data['status'] == 'running' and (2 - auction_data['bid_block_list'][user] | length) > 0 and not is_winning and not has_bid_on_block %}
-                                {% set cannot_bid = auction_data['status'] != 'running' or (2 - auction_data['bid_block_list'][user] | length) <= 0 or is_winning or has_bid_on_block %}
-                        
-                                <tr class="
-                                    {% if is_winning %}table-active{% endif %}
-                                    {% if can_bid %}table-warning{% endif %}
-                                    {% if cannot_bid %}table-danger{% endif %}
-                                ">
-                                    <td>{{ block }}</td>
-                                    <td>{{ data['bids_last_round'] }}</td>
-                                    <td id="start_price_{{ block }}" class="start-price-column">{{ data['start_price'] | format_price }}</td>
-                                    <td>
-                                        <form action="{{ url_for('place_bid') }}" method="post" class="d-flex">
-                                            <input type="hidden" name="user" value="{{ user }}">
-                                            <input type="hidden" name="block" value="{{ block }}">
-                                            <select name="bid_percentage" class="form-select me-2 bg-transparent" id="bid_percentage_{{ block }}" onchange="updateBidDetails('{{ block }}')">
-                                                <option value="2" selected>2%</option>
-                                                <option value="4">4%</option>
-                                                <option value="6">6%</option>
-                                                <option value="8">8%</option>
-                                                <option value="10">10%</option>
-                                            </select>
-                                        
-                                    </td>
-                                    <td id="bid_increment_{{ block }}">{{ data['default_bid_increment']|format_price }}</td>
-                                    <td id="bid_amount_{{ block }}" class="bid-amount-column">{{ data['default_bid_amount']|format_price }}</td>
-                                    <td>
-                                        <button type="submit" class="btn btn-primary {% if cannot_bid %}d-none{% endif %}">
-                                            <i class="fas fa-gavel"></i> Bid
-                                        </button>
-                                    </form>
-                                    </td>
-                                    <td>{% if is_winning %}Yes{% else %}No{% endif %}</td>
-                                </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-<!-- Right Column: My Bids and Budget -->
-<div class="right-column">
-    <!-- Existing sections (My Bids and Budget) -->
+<!-- Middle Column: Auction Table -->
+<div class="middle-column">
     <div class="section">
-        <h2>Current Round bids</h2>
+        <h2>Auction Table</h2>
         <table class="table table-bordered table-hover">
             <thead>
                 <tr>
-                    <th>Round</th>
                     <th>Block</th>
-                    <th>Amount</th>
-                    <th>Status</th>
+                    <th>Bids in Last Round</th>
+                    <th class="start-price-column">Start Price [PLN]</th>
+                    <th>Bid Percentage [%]</th>
+                    <th>Bid Increment [PLN]</th>
+                    <th class="bid-amount-column">Bid Amount [PLN]</th>
+                    <th>Bid</th>
+                    <th>Are You Bidding?</th>
                 </tr>
             </thead>
             <tbody>
-                {% for bid in user_bids %}
-                    <tr>
-                        <td>{{ bid['round'] }}</td>
-                        <td>{{ bid['block'] }}</td>
-                        <td>{{ bid['amount']|format_price }}</td>
-                        <td>
-                            {% if bid['is_success'] == 'skipped' %}
-                                Skipped
-                            {% elif bid['is_success'] == 'yes' %}
-                                Successful
-                            {% else %}
-                                Pending
-                            {% endif %}
-                        </td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+                {% for block, data in auction_data['block_data'].items() %}
+                    {% set has_bid_on_block = block in auction_data['bid_block_list'].get(user, []) %}
+                    {% set is_winning = auction_data['current_leaders'][block] == user %}
+                    {% set can_bid = auction_data['status'] == 'running' and (2 - auction_data['bid_block_list'].get(user, []) | length) > 0 and not is_winning and not has_bid_on_block %}
+                    {% set cannot_bid = auction_data['status'] != 'running' or (2 - auction_data['bid_block_list'].get(user, []) | length) <= 0 or is_winning or has_bid_on_block %}
+                    {% set is_finished_and_won = auction_data['status'] == 'finished' and is_winning %}
 
-    <!-- Budget Section -->
-    <div class="section">
-        <h2>Budget</h2>
-        <div class="alert alert-info">
-            <strong>{{ current_sum | format_price }}</strong>
-        </div>
-    </div>
-
-    <!-- New Section: Bid Block List -->
-    <div class="section">
-        <h2>Your Bids in Current Round</h2>
-        <table class="table table-bordered table-hover">
-            <thead>
-                <tr>
-                    <th>User</th>
-                    <th>Blocks Bid On</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for user, blocks in auction_data['bid_block_list'].items() %}
-                    <tr>
-                        <td>{{ user }}</td>
+                    <tr class="
+                        {% if is_finished_and_won %}table-success{% endif %}
+                        {% if is_winning and not is_finished_and_won %}table-active{% endif %}
+                        {% if has_bid_on_block and not is_winning %}table-warning{% endif %}
+                        {% if can_bid %}table-info{% endif %}
+                        {% if cannot_bid and not is_winning and not has_bid_on_block %}table-danger{% endif %}
+                    ">
+                        <td>{{ block }}</td>
+                        <td>{{ data['bids_last_round'] }}</td>
+                        <td id="start_price_{{ block }}" class="start-price-column">{{ data['start_price'] | format_price }}</td>
                         <td>
-                            {% if blocks %}
-                                {{ blocks | join(', ') }}
-                            {% else %}
-                                No bids yet
-                            {% endif %}
+                            <form action="{{ url_for('place_bid') }}" method="post" class="d-flex">
+                                <input type="hidden" name="user" value="{{ user }}">
+                                <input type="hidden" name="block" value="{{ block }}">
+                                <select name="bid_percentage" class="form-select me-2 bg-transparent" id="bid_percentage_{{ block }}" onchange="updateBidDetails('{{ block }}')">
+                                    <option value="2" selected>2%</option>
+                                    <option value="4">4%</option>
+                                    <option value="6">6%</option>
+                                    <option value="8">8%</option>
+                                    <option value="10">10%</option>
+                                </select>
+                            
                         </td>
+                        <td id="bid_increment_{{ block }}">{{ data['default_bid_increment']|format_price }}</td>
+                        <td id="bid_amount_{{ block }}" class="bid-amount-column">{{ data['default_bid_amount']|format_price }}</td>
+                        <td>
+                            <button type="submit" class="btn btn-primary {% if cannot_bid %}d-none{% endif %}">
+                                <i class="fas fa-gavel"></i> Bid
+                            </button>
+                        </form>
+                        </td>
+                        <td>{% if has_bid_on_block %}Yes{% else %}No{% endif %}</td>
                     </tr>
                 {% endfor %}
             </tbody>
@@ -345,8 +276,73 @@
     </div>
 </div>
 
+            <!-- Right Column: Combined Budget and Your Bids in Current Round -->
+            <div class="right-column">
+                <div class="section">
+                    <h2>Budget & Your Bids</h2>
+                    <div class="alert alert-info">
+                        <strong>Budget: {{ current_sum | format_price }}</strong>
+                    </div>
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <th>Block</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for block in auction_data['bid_block_list'].get(user, []) %}
+                                <tr>
+                                    <td>{{ block }}</td>
+                                    <td>Bid Placed</td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <td colspan="2">No bids placed yet</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                <tr>
+                    <h2>Block</h2>
+                    <td>{{ block }}</td>
+                    <td>{{ has_bid_on_block }}</td>
+                    <td>{{ is_winning }}</td>
+                    <td>{{ can_bid }}</td>
+                    <td>{{ cannot_bid }}</td>
+                </tr>
+            </div>
+        </div>
+
+        <!-- Historical User Bids Panel -->
+        <div class="section">
+            <h2>Historical User Bids</h2>
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <th>Round</th>
+                        <th>Block</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bid in previous_round_bids %}
+                        <tr>
+                            <td>{{ bid['round'] }}</td>
+                            <td>{{ bid['block'] }}</td>
+                            <td>{{ bid['amount']|format_price }}</td>
+                            <td>{{ bid['is_success'] }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <!-- Footer -->
-    <footer class="bg-light text-center py-3 mt-4">
+    <footer>
         <p>&copy; 2025 Auction System | Powered by marcin.szymanski2@play.pl</p>
     </footer>
 
@@ -356,27 +352,34 @@
         let welcomePanel = document.getElementById('welcomePanel');
         let welcomeMessage = document.getElementById('welcomeMessage');
 
-        // Function to fetch auction status and remaining time
-        function fetchAuctionStatus() {
-            fetch("{{ url_for('check_status') }}")
-                .then(response => response.json())
-                .then(data => {
-                    const remainingTime = data.remaining_time;
-                    const auctionStatus = data.status;
 
-                    // Update the timer display
-                    updateTimer(remainingTime);
+            // new verison connecting to one endpoint
+            function fetchAuctionStatus() {
+                fetch("{{ url_for('get_consolidated_data') }}")
+                    .then(response => response.json())
+                    .then(data => {
+                        const remainingTime = data.remaining_time;
+                        const auctionStatus = data.status;
 
-                    // Update the Welcome Panel
-                    updateWelcomePanel(remainingTime, auctionStatus);
+                        // Update the timer display
+                        updateTimer(remainingTime);
 
-                    // Reload the page if the auction status changes
-                    if (auctionStatus !== "{{ auction_data['status'] }}") {
-                        location.reload();
-                    }
-                })
-                .catch(error => console.error('Error fetching auction status:', error));
-        }
+                        // Update the Welcome Panel
+                        updateWelcomePanel(remainingTime, auctionStatus);
+
+                        // Reload the page if the auction status changes
+                        if (auctionStatus !== "{{ auction_data['status'] }}") {
+                            location.reload();
+                        }
+
+                        // Check for logout status
+                        if (data.logout_all) {
+                            window.location.href = "{{ url_for('index') }}";
+                        }
+                    })
+                    .catch(error => console.error('Error fetching auction status:', error));
+            }
+            
 
         // Function to update the timer display
         function updateTimer(remainingTime) {

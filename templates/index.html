@@ -279,57 +279,47 @@
 
     <!-- JavaScript for Auto-Refresh and Form Submission -->
     <script>
-        // Function to fetch and update the logged-in users table
-        function updateLoggedInUsersTable() {
-            fetch('/get_logged_in_users')
+        // Function to fetch and update the logged-in users table and auction status
+        function updateAuctionData() {
+            fetch('/get_consolidated_data')
                 .then(response => response.json())
                 .then(data => {
+                    // Update the logged-in users table
                     const tableBody = document.getElementById('logged-in-users-table').getElementsByTagName('tbody')[0];
                     tableBody.innerHTML = ''; // Clear the current content
-
+    
                     // Loop through the logged-in users and add rows to the table
-                    for (const [username, userData] of Object.entries(data)) {
+                    for (const [username, userData] of Object.entries(data.logged_in_users)) {
                         const row = tableBody.insertRow();
                         const cellUsername = row.insertCell();
                         const cellRole = row.insertCell();
                         const cellStatus = row.insertCell();
-
+    
                         cellUsername.textContent = username;
                         cellRole.textContent = userData.role;
                         cellStatus.textContent = userData.active ? 'Active' : 'Excluded';
                     }
-                })
-                .catch(error => console.error('Error fetching logged-in users:', error));
-        }
-
-        // Function to fetch and update auction status and round number
-        function updateAuctionStatus() {
-            fetch('/get_auction_data')
-                .then(response => response.json())
-                .then(data => {
+    
+                    // Update auction status and round number
                     document.getElementById('auction-status').textContent = data.status;
                     document.getElementById('current-round').textContent = data.current_round;
                 })
                 .catch(error => console.error('Error fetching auction data:', error));
         }
-
-        // Refresh the table and auction status every second
-        setInterval(() => {
-            updateLoggedInUsersTable();
-            updateAuctionStatus();
-        }, 1000);
-
+    
+        // Refresh the data every second
+        setInterval(updateAuctionData, 1000);
+    
         // Initial call to populate the table and auction status when the page loads
-        updateLoggedInUsersTable();
-        updateAuctionStatus();
-
-        // Handle form submission for starting the auction
+        updateAuctionData();
+    
+        // Handle form submission for starting the auction (unchanged)
         document.getElementById('start-auction-form').addEventListener('submit', function (event) {
             event.preventDefault(); // Prevent the default form submission
-
+    
             const delay = document.getElementById('delay').value;
             const roundTime = document.getElementById('round_time').value;
-
+    
             fetch('/start_auction', {
                 method: 'POST',
                 headers: {
