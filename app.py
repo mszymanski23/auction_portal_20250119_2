@@ -21,7 +21,7 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
 logger = logging.getLogger()
 # Disable werkzeug logging
 log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)  # Set to ERROR to suppress INFO logs
+log.setLevel(logging.INFO)  # Set to ERROR to suppress INFO logs
 
 #log = logging.getLogger('werkzeug')
 #log.setLevel(logging.Error)  # Ustawienie logowania na ERROR, żeby wyciszyć INFO i DEBUG
@@ -70,19 +70,19 @@ auction_data = {
 auction_data['total_bids_left'] = len(logged_in_users) * 2  # Each user has 2 bids
 auction_data['bid_block_list'] = {user: [] for user in logged_in_users}
 
-def check_if_all_users_bid():
-    """
-    Check if all active users have placed their bids in the current round.
-    """
-    active_users = [user for user, data in logged_in_users.items() if data.get('active', True)]
-    current_round_bids = [bid for bid in auction_data['bids'] if bid['round'] == auction_data['current_round']]
+# def check_if_all_users_bid():
+#     """
+#     Check if all active users have placed their bids in the current round.
+#     """
+#     active_users = [user for user, data in logged_in_users.items() if data.get('active', True)]
+#     current_round_bids = [bid for bid in auction_data['bids'] if bid['round'] == auction_data['current_round']]
 
-    # Check if each active user has placed at least one bid
-    for user in active_users:
-        user_bids = [bid for bid in current_round_bids if bid['user'] == user]
-        if not user_bids:
-            return False  # At least one active user hasn't bid yet
-    return True  # All active users have bid
+#     # Check if each active user has placed at least one bid
+#     for user in active_users:
+#         user_bids = [bid for bid in current_round_bids if bid['user'] == user]
+#         if not user_bids:
+#             return False  # At least one active user hasn't bid yet
+#     return True  # All active users have bid
 
 @app.route('/')
 def index():
@@ -438,7 +438,6 @@ def determine_winners():
 #     total_bids_auction_attempt = len([bid for bid in auction_data['bids'] if bid['round'] == auction_data['current_round']])
 
 #     return required_bids_per_user
-
 def update_auction_table():
     for result in auction_data['results']:
         block = result['block']
@@ -457,18 +456,62 @@ def update_auction_table():
                 auction_data['bid_block_list'][leader].append(block)
     logger.warning(f"Updated bid_block_list: {auction_data['bid_block_list']}")
 
-@app.route('/get_auction_data')
-def get_auction_data():
+# ----  endpoints refreshing in background
+
+# @app.route('/get_auction_data')
+# def get_auction_data():
+#     # Calculate total_bids_left and user_bids_left
+#     total_bids_left = 0
+#     user_bids_left = {}
+#     for user in logged_in_users:
+#         # Count the number of blocks where the user is the current leader
+#         blocks_led = sum(1 for block, leader in auction_data['current_leaders'].items() if leader == user)
+#         # Each user has 2 bids, but they cannot bid on blocks they are already leading
+#         bids_left_for_user = 2 - blocks_led
+#         user_bids_left[user] = bids_left_for_user
+#         total_bids_left += bids_left_for_user
+
+#     return jsonify({
+#         'status': auction_data['status'],
+#         'current_round': auction_data['current_round'],
+#         'results': auction_data['results'],
+#         'bids': auction_data['bids'],
+#         'block_data': auction_data['block_data'],
+#         'current_leaders': auction_data['current_leaders'],
+#         'logged_in_users': logged_in_users,
+#         'total_bids_left': total_bids_left,  # Add total_bids_left to the response
+#         'user_bids_left': user_bids_left  # Add user_bids_left to the response
+#     })
+
+# @app.route('/check_status')
+# def check_status():
+#     remaining_time = get_remaining_time()
+#     return jsonify(
+#         status=auction_data['status'],
+#         round=auction_data['current_round'],
+#         remaining_time=remaining_time
+#     )
+
+
+# @app.route('/get_logged_in_users')
+# def get_logged_in_users():
+#     return jsonify(logged_in_users)
+# -----        end of endpoints in background
+
+# --------------------------------------------------------------------------------------- new endpoint --------------------------------------------------------------------------------------
+@app.route('/get_consolidated_data')
+def get_consolidated_data():
     # Calculate total_bids_left and user_bids_left
     total_bids_left = 0
     user_bids_left = {}
     for user in logged_in_users:
-        # Count the number of blocks where the user is the current leader
         blocks_led = sum(1 for block, leader in auction_data['current_leaders'].items() if leader == user)
-        # Each user has 2 bids, but they cannot bid on blocks they are already leading
         bids_left_for_user = 2 - blocks_led
         user_bids_left[user] = bids_left_for_user
         total_bids_left += bids_left_for_user
+
+    # Calculate remaining time
+    remaining_time = get_remaining_time()
 
     return jsonify({
         'status': auction_data['status'],
@@ -478,19 +521,12 @@ def get_auction_data():
         'block_data': auction_data['block_data'],
         'current_leaders': auction_data['current_leaders'],
         'logged_in_users': logged_in_users,
-        'total_bids_left': total_bids_left,  # Add total_bids_left to the response
-        'user_bids_left': user_bids_left  # Add user_bids_left to the response
+        'total_bids_left': total_bids_left,
+        'user_bids_left': user_bids_left,
+        'remaining_time': remaining_time,
+        'logout_all': auction_data.get('logout_all', False)
     })
-
-@app.route('/check_status')
-def check_status():
-    remaining_time = get_remaining_time()
-    return jsonify(
-        status=auction_data['status'],
-        round=auction_data['current_round'],
-        remaining_time=remaining_time
-    )
-
+    
 def get_remaining_time():
 
     if 'round_start_time' not in auction_data or auction_data['status'] in ['finished', 'Waiting for Start']:
@@ -505,6 +541,7 @@ def get_remaining_time():
 
     logger.info(f"remaining time: {remaining}")
     return remaining
+
 
 @app.route('/export_auction_table')
 def export_auction_table():
@@ -551,9 +588,7 @@ def logout_all_users():
 def check_logout_status():
     return jsonify({'logout_all': auction_data.get('logout_all', False)})
 
-@app.route('/get_logged_in_users')
-def get_logged_in_users():
-    return jsonify(logged_in_users)
+
 
 @app.route('/export_my_bids/<username>')
 def export_my_bids(username):
